@@ -17,7 +17,9 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ./cache
-          key: ${{ runner.os }}-${{ github.workflow }}
+          key: ${{ runner.os }}-${{ github.workflow }}-${{ github.run_id }}
+          restore-keys: |-
+            ${{ runner.os }}-${{ github.workflow }}-
       - name: Install Dependencies
         run: pip install -r requirements.txt
       - name: Process Word API
