@@ -65,11 +65,11 @@ if __name__ == "__main__":
         c = {
             "type": "line",
             "data": {
-                "labels": df.index.values.tolist(),
+                "labels": df.index.tolist(),
                 "datasets": [
                     {
                         "label": key,
-                        "data": value.fillna(0).values.tolist(),
+                        "data": value.fillna(0).tolist(),
                         "fill": "false",
                     }
                     for key, value in df.iteritems()
