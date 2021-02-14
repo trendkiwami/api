@@ -1,3 +1,4 @@
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     db.to_csv(db_path, index=False)
 
     # ランキングの作成
-    rank = pd.DataFrame(db.rename(columns={"key": "title"}), columns=["title", "score", "updated_at"]).drop_duplicates(subset=["title"]).reset_index(drop=True)
+    rank = pd.DataFrame(db.rename(columns={"key": "title"}), columns=["title", "score", "updated_at", "chart"]).drop_duplicates(subset=["title"]).reset_index(drop=True)
     rank.updated_at = rank.title.apply(lambda x: db[db.key == x]["date"].iloc[-1])
 
     # スコアの算出
@@ -52,6 +53,39 @@ if __name__ == "__main__":
         return traffic.median() / 2 + np.nan_to_num(diff.median())
 
     rank.score = rank.title.apply(calc_score)
+
+    # チャートの作成
+    def create_chart(title):
+        df = db[db.key == title].reset_index(drop=True)
+        df["hour"] = df.date.apply(lambda x: pd.to_datetime(x, utc=True).hour - utc.hour)
+        df = df.drop_duplicates(subset=["hour", "source"]).reset_index(drop=True)
+        df = df.pivot(index="hour", columns="source", values="count")
+        df = pd.DataFrame(df, index=range(-23, 1))
+
+        c = {
+            "type": "line",
+            "data": {
+                "labels": df.index.values.tolist(),
+                "datasets": [
+                    {
+                        "label": key,
+                        "data": value.fillna(0).values.tolist(),
+                        "fill": "false",
+                    }
+                    for key, value in df.iteritems()
+                ],
+            },
+            "options": {
+                "title": {
+                    "display": "true",
+                    "text": title,
+                },
+            },
+        }
+
+        return "https://quickchart.io/chart?bkg=white&c=" + urllib.parse.quote(str(c))
+
+    rank.chart = rank.title.apply(create_chart)
 
     # スコア順にソート
     rank = rank.sort_values(by=["score"], ascending=False).reset_index(drop=True)
