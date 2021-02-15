@@ -1,3 +1,4 @@
+import json
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -71,28 +72,31 @@ if __name__ == "__main__":
 
         print(df)
 
-        c = {
+        data = {
             "type": "line",
             "data": {
                 "labels": df.index.tolist(),
                 "datasets": [
                     {
                         "label": key,
-                        "data": value.fillna(0).tolist(),
-                        "fill": "false",
+                        "data": value.tolist(),
+                        "fill": False,
                     }
                     for key, value in df.iteritems()
                 ],
             },
             "options": {
                 "title": {
-                    "display": "true",
+                    "display": True,
                     "text": title,
                 },
             },
         }
 
-        return "https://quickchart.io/chart?bkg=white&c=" + urllib.parse.quote(str(c))
+        c = json.dumps(data)
+        chart = "https://quickchart.io/chart?bkg=white&c=" + urllib.parse.quote(c)
+
+        return chart
 
     rank.chart = rank.title.apply(create_chart)
 
