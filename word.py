@@ -50,17 +50,26 @@ if __name__ == "__main__":
     def calc_score(title):
         traffic = db[db.key == title]["count"].reset_index(drop=True)
         diff = traffic.diff().dropna().reset_index(drop=True)
-        return traffic.median() / 2 + np.nan_to_num(diff.median())
+
+        score = traffic.median() / 2 + np.nan_to_num(diff.median())
+
+        print(title, score)
+
+        return score
 
     rank.score = rank.title.apply(calc_score)
 
     # チャートの作成
     def create_chart(title):
         df = db[db.key == title].reset_index(drop=True)
-        df["hour"] = df.date.apply(lambda x: pd.to_datetime(x, utc=True).hour - utc.hour)
+        df["hour"] = df.date.apply(lambda x: (pd.to_datetime(x, utc=True).to_pydatetime() - utc).total_seconds() // 3600)
         df = df.drop_duplicates(subset=["hour", "source"]).reset_index(drop=True)
-        df = df.pivot(index="hour", columns="source", values="count")
-        df = pd.DataFrame(df, index=range(-23, 1))
+
+        print(df)
+
+        df = df.pivot(index="hour", columns="source", values="count").reindex(pd.RangeIndex(start=-23, stop=1))
+
+        print(df)
 
         c = {
             "type": "line",
@@ -89,6 +98,8 @@ if __name__ == "__main__":
 
     # スコア順にソート
     rank = rank.sort_values(by=["score"], ascending=False).reset_index(drop=True)
+
+    print(rank)
 
     # ランキングをファイルに書き込む
     rank_path = Path("public/word.json")
